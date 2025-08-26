@@ -36,11 +36,11 @@
              box-shadow: 0 0 30px rgba(79, 70, 229, 0.9);
         }
         .palette-device {
-            cursor: grab;
+            cursor: pointer;
             transition: background-color 0.2s ease;
         }
         .palette-device:active {
-            cursor: grabbing;
+            transform: scale(0.95);
         }
         .config-panel {
             transition: transform 0.3s ease-in-out;
@@ -107,15 +107,15 @@
     <div class="flex flex-grow overflow-hidden">
         <!-- Device Palette -->
         <aside id="device-palette" class="w-24 bg-gray-800 p-2 flex flex-col items-center space-y-4 border-r border-gray-700">
-            <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" draggable="true" data-type="router">
+            <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" data-type="router">
                 <div id="router-icon-template" class="w-12 h-12 mx-auto pointer-events-none"></div>
                 <span class="text-xs font-semibold">Router</span>
             </div>
-            <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" draggable="true" data-type="switch">
+            <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" data-type="switch">
                  <div id="switch-icon-template" class="w-12 h-12 mx-auto pointer-events-none"></div>
                 <span class="text-xs font-semibold">Switch</span>
             </div>
-            <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" draggable="true" data-type="pc">
+            <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" data-type="pc">
                  <div id="pc-icon-template" class="w-12 h-12 mx-auto pointer-events-none"></div>
                 <span class="text-xs font-semibold">PC</span>
             </div>
@@ -283,24 +283,34 @@
                 return el;
             }
 
-            devicePalette.addEventListener('dragstart', (e) => {
-                if (e.target.classList.contains('palette-device')) {
-                    e.dataTransfer.setData('text/plain', e.target.dataset.type);
-                }
+            document.querySelectorAll('.palette-device').forEach(paletteDevice => {
+                // For mouse users (double-click)
+                paletteDevice.addEventListener('dblclick', (e) => {
+                    const type = e.currentTarget.dataset.type;
+                    const rect = workspace.getBoundingClientRect();
+                    const x = (rect.width / 2 - 40) + (Math.random() * 100 - 50);
+                    const y = (rect.height / 2 - 40) + (Math.random() * 100 - 50);
+                    createDevice(type, x, y);
+                });
+
+                // For touch users (double-tap)
+                let lastTapTime = 0;
+                paletteDevice.addEventListener('touchstart', (e) => {
+                    const currentTime = new Date().getTime();
+                    if (currentTime - lastTapTime < 300) {
+                        e.preventDefault();
+                        const type = e.currentTarget.dataset.type;
+                        const rect = workspace.getBoundingClientRect();
+                        const x = (rect.width / 2 - 40) + (Math.random() * 100 - 50);
+                        const y = (rect.height / 2 - 40) + (Math.random() * 100 - 50);
+                        createDevice(type, x, y);
+                        lastTapTime = 0;
+                    } else {
+                        lastTapTime = currentTime;
+                    }
+                });
             });
 
-            workspace.addEventListener('dragover', (e) => {
-                e.preventDefault();
-            });
-
-            workspace.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const type = e.dataTransfer.getData('text/plain');
-                const rect = workspace.getBoundingClientRect();
-                const x = e.clientX - rect.left - 40;
-                const y = e.clientY - rect.top - 40;
-                createDevice(type, x, y);
-            });
 
             function setupDeviceEventListeners(deviceData) {
                 const deviceEl = deviceData.el;
