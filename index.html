@@ -284,7 +284,6 @@
             }
 
             document.querySelectorAll('.palette-device').forEach(paletteDevice => {
-                // For mouse users (double-click)
                 paletteDevice.addEventListener('dblclick', (e) => {
                     const type = e.currentTarget.dataset.type;
                     const rect = workspace.getBoundingClientRect();
@@ -293,7 +292,6 @@
                     createDevice(type, x, y);
                 });
 
-                // For touch users (double-tap)
                 let lastTapTime = 0;
                 paletteDevice.addEventListener('touchstart', (e) => {
                     const currentTime = new Date().getTime();
@@ -337,8 +335,9 @@
                         hasMoved = true;
                         e.preventDefault();
                         const moveEvent = e.touches ? e.touches[0] : e;
-                        deviceData.x = moveEvent.clientX - offsetX;
-                        deviceData.y = moveEvent.clientY - offsetY;
+                        const workspaceRect = workspace.getBoundingClientRect();
+                        deviceData.x = moveEvent.clientX - workspaceRect.left - offsetX;
+                        deviceData.y = moveEvent.clientY - workspaceRect.top - offsetY;
                         deviceEl.style.left = `${deviceData.x}px`;
                         deviceEl.style.top = `${deviceData.y}px`;
                         updateConnections();
