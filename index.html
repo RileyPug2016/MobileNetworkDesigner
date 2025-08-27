@@ -81,6 +81,14 @@
             user-select: none;
             transform: translate(-50%, -50%);
         }
+        #event-log {
+            resize: vertical;
+            overflow: auto;
+            min-height: 100px;
+        }
+        .log-entry {
+            border-bottom: 1px solid #374151;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white overflow-hidden h-screen flex flex-col">
@@ -89,43 +97,61 @@
     <header class="bg-gray-800/50 backdrop-blur-sm shadow-md p-3 flex justify-between items-center z-20 border-b border-gray-700">
         <h1 class="text-xl font-bold text-indigo-400">Network Simulator</h1>
         <div id="toolbar" class="flex items-center space-x-2 sm:space-x-4">
-            <button id="connect-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-3 sm:px-4 rounded-lg flex items-center space-x-2 transition-all duration-200 transform hover:scale-105">
-                <i class="fas fa-link"></i>
-                <span class="hidden sm:inline">Connect</span>
+            <button id="save-btn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-3 sm:px-4 rounded-lg flex items-center space-x-2 transition-all duration-200 transform hover:scale-105">
+                <i class="fas fa-save"></i>
+                <span class="hidden sm:inline">Save</span>
             </button>
-             <button id="ping-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 sm:px-4 rounded-lg flex items-center space-x-2 transition-all duration-200 transform hover:scale-105">
-                <i class="fas fa-network-wired"></i>
-                 <span class="hidden sm:inline">Ping</span>
+            <button id="load-btn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-3 sm:px-4 rounded-lg flex items-center space-x-2 transition-all duration-200 transform hover:scale-105">
+                <i class="fas fa-folder-open"></i>
+                <span class="hidden sm:inline">Load</span>
             </button>
-            <button id="delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 sm:px-4 rounded-lg flex items-center space-x-2 transition-all duration-200 transform hover:scale-105">
-                <i class="fas fa-trash"></i>
-                 <span class="hidden sm:inline">Delete</span>
-            </button>
+            <input type="file" id="load-input" class="hidden" accept=".json">
         </div>
     </header>
 
     <div class="flex flex-grow overflow-hidden">
-        <!-- Device Palette -->
-        <aside id="device-palette" class="w-24 bg-gray-800 p-2 flex flex-col items-center space-y-4 border-r border-gray-700">
-            <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" data-type="router">
-                <div id="router-icon-template" class="w-12 h-12 mx-auto pointer-events-none"></div>
-                <span class="text-xs font-semibold">Router</span>
+        <!-- Left Panel -->
+        <aside class="w-24 bg-gray-800 p-2 flex flex-col items-center border-r border-gray-700">
+            <!-- Device Palette -->
+            <div id="device-palette" class="flex flex-col items-center space-y-4">
+                <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" data-type="router">
+                    <div id="router-icon-template" class="w-12 h-12 mx-auto pointer-events-none"></div>
+                    <span class="text-xs font-semibold">Router</span>
+                </div>
+                <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" data-type="switch">
+                     <div id="switch-icon-template" class="w-12 h-12 mx-auto pointer-events-none"></div>
+                    <span class="text-xs font-semibold">Switch</span>
+                </div>
+                <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" data-type="pc">
+                     <div id="pc-icon-template" class="w-12 h-12 mx-auto pointer-events-none"></div>
+                    <span class="text-xs font-semibold">PC</span>
+                </div>
             </div>
-            <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" data-type="switch">
-                 <div id="switch-icon-template" class="w-12 h-12 mx-auto pointer-events-none"></div>
-                <span class="text-xs font-semibold">Switch</span>
-            </div>
-            <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" data-type="pc">
-                 <div id="pc-icon-template" class="w-12 h-12 mx-auto pointer-events-none"></div>
-                <span class="text-xs font-semibold">PC</span>
+            <!-- Action Panel -->
+            <div class="mt-auto w-full flex flex-col items-center space-y-2">
+                <button id="connect-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold w-full py-2 px-3 rounded-lg flex items-center justify-center space-x-2 transition-all duration-200 transform hover:scale-105" title="Connect">
+                    <i class="fas fa-link"></i>
+                </button>
+                 <button id="ping-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold w-full py-2 px-3 rounded-lg flex items-center justify-center space-x-2 transition-all duration-200 transform hover:scale-105" title="Ping">
+                    <i class="fas fa-network-wired"></i>
+                </button>
+                <button id="delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold w-full py-2 px-3 rounded-lg flex items-center justify-center space-x-2 transition-all duration-200 transform hover:scale-105" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-grow relative">
-            <div id="workspace" class="w-full h-full absolute top-0 left-0 bg-gray-900 overflow-hidden">
-                <svg id="connections-svg" class="absolute top-0 left-0 w-full h-full pointer-events-none"></svg>
-                <div id="label-container"></div>
+        <main class="flex-grow relative flex flex-col">
+            <div id="workspace-container" class="flex-grow relative">
+                <div id="workspace" class="w-full h-full absolute top-0 left-0 bg-gray-900 overflow-hidden">
+                    <svg id="connections-svg" class="absolute top-0 left-0 w-full h-full pointer-events-none"></svg>
+                    <div id="label-container"></div>
+                </div>
+            </div>
+            <div id="event-log" class="w-full bg-gray-800 border-t-2 border-gray-700 p-2 text-xs font-mono text-gray-400">
+                <div class="font-bold text-gray-300 mb-2">Event Log</div>
+                <div id="log-content"></div>
             </div>
         </main>
     </div>
@@ -150,12 +176,12 @@
             <h2 class="text-2xl font-bold mb-4 text-indigo-400">Ping Utility</h2>
             <div class="space-y-4">
                 <div>
-                    <label for="ping-source" class="block text-sm font-medium text-gray-300">Source IP</label>
-                    <input type="text" id="ping-source" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                    <label for="ping-source" class="block text-sm font-medium text-gray-300">Source Device</label>
+                    <select id="ping-source" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"></select>
                 </div>
                 <div>
-                    <label for="ping-dest" class="block text-sm font-medium text-gray-300">Destination IP</label>
-                    <input type="text" id="ping-dest" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2">
+                    <label for="ping-dest" class="block text-sm font-medium text-gray-300">Destination Device</label>
+                    <select id="ping-dest" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2"></select>
                 </div>
             </div>
             <div class="mt-6 flex justify-end space-x-4">
@@ -189,12 +215,16 @@
             const pingModal = document.getElementById('ping-modal');
             const cancelPingBtn = document.getElementById('cancel-ping-btn');
             const executePingBtn = document.getElementById('execute-ping-btn');
-            const pingSourceInput = document.getElementById('ping-source');
-            const pingDestInput = document.getElementById('ping-dest');
+            const pingSourceSelect = document.getElementById('ping-source');
+            const pingDestSelect = document.getElementById('ping-dest');
             const pingOutput = document.getElementById('ping-output');
             const alertModal = document.getElementById('alert-modal');
             const alertMessage = document.getElementById('alert-message');
             const alertOkBtn = document.getElementById('alert-ok-btn');
+            const saveBtn = document.getElementById('save-btn');
+            const loadBtn = document.getElementById('load-btn');
+            const loadInput = document.getElementById('load-input');
+            const logContent = document.getElementById('log-content');
 
             // --- State ---
             let devices = [];
@@ -218,22 +248,34 @@
             document.getElementById('pc-icon-template').innerHTML = icons.pc;
 
 
-            // --- Custom Alert ---
+            // --- Utility Functions ---
+            function logEvent(message, color = 'text-gray-400') {
+                const entry = document.createElement('div');
+                entry.className = `log-entry p-1 ${color}`;
+                const timestamp = new Date().toLocaleTimeString();
+                entry.innerHTML = `<span class="text-gray-500">${timestamp}</span>: ${message}`;
+                logContent.insertBefore(entry, logContent.firstChild);
+                if (logContent.children.length > 100) {
+                    logContent.removeChild(logContent.lastChild);
+                }
+            }
+            
             function showAlert(message) {
                 alertMessage.textContent = message;
                 alertModal.classList.add('show');
+                logEvent(`Alert: ${message}`, 'text-yellow-400');
             }
             alertOkBtn.addEventListener('click', () => alertModal.classList.remove('show'));
 
             // --- Device Management ---
-            function createDevice(type, x, y) {
+            function createDevice(type, x, y, name = null, interfaces = null) {
                 const id = deviceIdCounter++;
                 const deviceData = {
                     id: id,
                     type: type,
                     x: x,
                     y: y,
-                    name: `${type.charAt(0).toUpperCase()}${id}`,
+                    name: name || `${type.charAt(0).toUpperCase()}${id}`,
                     interfaces: {},
                 };
                 
@@ -242,7 +284,9 @@
                         const ifName = `eth0/${i}`;
                         deviceData.interfaces[ifName] = { 
                             mac: `00:00:00:00:${id.toString().padStart(2, '0')}:${i.toString().padStart(2, '0')}`,
-                            connectedTo: null, ip: '', cidr: ''
+                            connectedTo: null, 
+                            ip: interfaces?.[ifName]?.ip || '', 
+                            cidr: interfaces?.[ifName]?.cidr || ''
                         };
                     }
                     deviceData.routingTable = [];
@@ -251,15 +295,21 @@
                         const ifName = `fa0/${i}`;
                         deviceData.interfaces[ifName] = { 
                             mac: `00:00:00:00:${id.toString().padStart(2, '0')}:${i.toString().padStart(2, '0')}`,
-                            connectedTo: null, mode: 'access', vlan: 1
+                            connectedTo: null, 
+                            mode: interfaces?.[ifName]?.mode || 'access', 
+                            vlan: interfaces?.[ifName]?.vlan || 1
                         };
                     }
                     deviceData.macAddressTable = [];
                     deviceData.vlans = [{id: 1, name: 'default'}];
                 } else if (type === 'pc') {
+                    const ifaceConfig = interfaces?.['eth0'] || {};
                     deviceData.interfaces['eth0'] = {
                         mac: `00:00:00:00:${id.toString().padStart(2, '0')}:00`,
-                        connectedTo: null, ip: '', cidr: '', gateway: ''
+                        connectedTo: null, 
+                        ip: ifaceConfig.ip || '', 
+                        cidr: ifaceConfig.cidr || '', 
+                        gateway: ifaceConfig.gateway || ''
                     };
                 }
 
@@ -268,6 +318,8 @@
                 workspace.appendChild(deviceData.el);
                 setupDeviceEventListeners(deviceData);
                 if(type === 'router') updateRoutingTable(deviceData);
+                logEvent(`Device added: ${deviceData.name} (${type})`);
+                return deviceData;
             }
 
             function createDeviceElement(device) {
@@ -394,10 +446,11 @@
                         const moveListener = (e) => {
                             const event = e.touches ? e.touches[0] : e;
                             const startPos = getDeviceCenter(connectionStartDevice);
+                            const workspaceRect = workspace.getBoundingClientRect();
                             tempLine.setAttribute('x1', startPos.x);
                             tempLine.setAttribute('y1', startPos.y);
-                            tempLine.setAttribute('x2', event.clientX);
-                            tempLine.setAttribute('y2', event.clientY);
+                            tempLine.setAttribute('x2', event.clientX - workspaceRect.left);
+                            tempLine.setAttribute('y2', event.clientY - workspaceRect.top);
                         };
                         document.addEventListener('mousemove', moveListener);
                         document.addEventListener('touchmove', moveListener);
@@ -485,6 +538,7 @@
                     dev1.interfaces[if1].connectedTo = { deviceId: dev2.id, interface: if2 };
                     dev2.interfaces[if2].connectedTo = { deviceId: dev1.id, interface: if1 };
                     updateConnections();
+                    logEvent(`Connected ${dev1.name}(${if1}) to ${dev2.name}(${if2})`);
                 } else {
                     showAlert('No available interfaces on one of the devices.');
                 }
@@ -529,6 +583,7 @@
             }
             
             function deleteDevice(deviceToDelete) {
+                logEvent(`Device removed: ${deviceToDelete.name}`, 'text-red-400');
                 const connectionsToRemove = connections.filter(c => c.d1 === deviceToDelete.id || c.d2 === deviceToDelete.id);
                 connectionsToRemove.forEach(conn => {
                     const neighborId = conn.d1 === deviceToDelete.id ? conn.d2 : conn.d1;
@@ -747,6 +802,7 @@
                     nextHop,
                     interface: outgoingInterface
                 });
+                logEvent(`Static route added to ${router.name}: ${network}/${cidr} via ${nextHop}`);
             }
 
             function findInterfaceForNextHop(router, nextHopIp) {
@@ -767,12 +823,35 @@
             pingBtn.addEventListener('click', () => {
                 pingModal.classList.add('show');
                 pingOutput.textContent = '';
+                populatePingSelects();
             });
             cancelPingBtn.addEventListener('click', () => pingModal.classList.remove('show'));
 
+            function populatePingSelects() {
+                pingSourceSelect.innerHTML = '<option value="">Select Source</option>';
+                pingDestSelect.innerHTML = '<option value="">Select Destination</option>';
+                devices.filter(d => d.type === 'pc' || d.type === 'router').forEach(device => {
+                    Object.values(device.interfaces).forEach(iface => {
+                        if (iface.ip) {
+                            const option = document.createElement('option');
+                            option.value = iface.ip;
+                            option.textContent = `${device.name} - ${iface.ip}`;
+                            pingSourceSelect.appendChild(option.cloneNode(true));
+                            pingDestSelect.appendChild(option);
+                        }
+                    });
+                });
+            }
+
             executePingBtn.addEventListener('click', async () => {
-                const sourceIp = pingSourceInput.value;
-                const destIp = pingDestInput.value;
+                const sourceIp = pingSourceSelect.value;
+                const destIp = pingDestSelect.value;
+
+                if (!sourceIp || !destIp) {
+                    showAlert("Please select both a source and destination device.");
+                    return;
+                }
+
                 pingOutput.textContent = `Pinging ${destIp} from ${sourceIp}...\n\n`;
 
                 const sourceDevice = findDeviceByIp(sourceIp);
@@ -783,8 +862,10 @@
                     return;
                 }
 
+                logEvent(`Ping started from ${sourceDevice.name} (${sourceIp}) to ${destDevice.name} (${destIp})`, 'text-cyan-400');
                 const { path, status } = await simulatePacketFlow(sourceDevice, destDevice, sourceIp, destIp);
                 pingOutput.textContent += `\nResult: ${status}\n`;
+                logEvent(`Ping result: ${status}`, status === 'Success' ? 'text-green-400' : 'text-red-400');
 
                 if (path && path.length > 0) {
                     pingOutput.textContent += `Path: ${path.map(d => d.name).join(' -> ')}\n`;
@@ -817,6 +898,7 @@
                     existingEntry.timestamp = Date.now();
                 } else {
                     switchDevice.macAddressTable.push({ mac, interface: interfaceName, vlan, timestamp: Date.now() });
+                    logEvent(`${switchDevice.name} learned MAC ${mac} on port ${interfaceName}`, 'text-blue-400');
                 }
             }
 
@@ -1008,6 +1090,80 @@
                 }
                 return { path: null };
             }
+
+            // --- Save/Load Functionality ---
+            saveBtn.addEventListener('click', () => {
+                const saveData = {
+                    devices: devices.map(d => ({
+                        id: d.id,
+                        type: d.type,
+                        name: d.name,
+                        x: d.x,
+                        y: d.y,
+                        interfaces: d.interfaces,
+                        routingTable: d.routingTable,
+                        macAddressTable: d.macAddressTable
+                    })),
+                    connections: connections.map(c => ({ d1: c.d1, if1: c.if1, d2: c.d2, if2: c.if2 })),
+                    deviceIdCounter: deviceIdCounter
+                };
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(saveData, null, 2));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "topology.json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+                logEvent('Topology saved.', 'text-sky-400');
+            });
+
+            loadBtn.addEventListener('click', () => loadInput.click());
+            loadInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        buildNetworkFromData(data);
+                        logEvent('Topology loaded.', 'text-sky-400');
+                    } catch (err) {
+                        showAlert('Error parsing file. Is it a valid topology JSON?');
+                        console.error(err);
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = ''; // Reset input
+            });
+
+            function buildNetworkFromData(data) {
+                // Clear workspace
+                workspace.querySelectorAll('.device').forEach(el => el.remove());
+                labelContainer.innerHTML = '';
+                devices = [];
+                connections = [];
+                
+                const createdDeviceMap = new Map();
+
+                data.devices.forEach(devData => {
+                    const newDevice = createDevice(devData.type, devData.x, devData.y, devData.name, devData.interfaces);
+                    newDevice.routingTable = devData.routingTable || [];
+                    newDevice.macAddressTable = devData.macAddressTable || [];
+                    createdDeviceMap.set(devData.id, newDevice);
+                });
+                
+                data.connections.forEach(connData => {
+                    const dev1 = createdDeviceMap.get(connData.d1);
+                    const dev2 = createdDeviceMap.get(connData.d2);
+                    if (dev1 && dev2) {
+                        createConnection(dev1, dev2);
+                    }
+                });
+
+                deviceIdCounter = data.deviceIdCounter;
+                updateConnections();
+            }
+
 
             // --- Global Listeners ---
             workspace.addEventListener('mousedown', (e) => {
