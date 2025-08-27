@@ -118,9 +118,8 @@
     </header>
 
     <div class="flex flex-grow overflow-hidden">
-        <!-- Left Panel -->
+        <!-- Device Palette -->
         <aside class="w-20 md:w-28 bg-gray-800 p-2 flex flex-col items-center border-r border-gray-700">
-            <!-- Device Palette -->
             <div id="device-palette" class="flex flex-col items-center space-y-4">
                 <div class="palette-device text-center w-full p-2 rounded-lg hover:bg-gray-700" data-type="router">
                     <div id="router-icon-template" class="w-12 h-12 mx-auto pointer-events-none"></div>
@@ -135,21 +134,6 @@
                     <span class="text-xs font-semibold">PC</span>
                 </div>
             </div>
-            <!-- Action Panel -->
-            <div class="mt-auto w-full flex flex-col items-center space-y-2">
-                <button id="connect-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold w-full py-2 px-3 rounded-lg flex items-center justify-center space-x-2 transition-all duration-200 transform hover:scale-105" title="Connect">
-                    <i class="fas fa-link"></i>
-                    <span class="hidden md:inline">Connect</span>
-                </button>
-                 <button id="ping-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold w-full py-2 px-3 rounded-lg flex items-center justify-center space-x-2 transition-all duration-200 transform hover:scale-105" title="Ping">
-                    <i class="fas fa-network-wired"></i>
-                    <span class="hidden md:inline">Ping</span>
-                </button>
-                <button id="delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold w-full py-2 px-3 rounded-lg flex items-center justify-center space-x-2 transition-all duration-200 transform hover:scale-105" title="Delete">
-                    <i class="fas fa-trash"></i>
-                    <span class="hidden md:inline">Delete</span>
-                </button>
-            </div>
         </aside>
 
         <!-- Main Content -->
@@ -159,15 +143,33 @@
                     <svg id="connections-svg" class="absolute top-0 left-0 w-full h-full pointer-events-none"></svg>
                     <div id="label-container"></div>
                 </div>
-            </div>
-            <div id="event-log" class="bg-gray-800/80 backdrop-blur-md border-2 border-gray-700 rounded-lg shadow-2xl flex flex-col">
-                <div id="event-log-header" class="p-2 flex justify-between items-center bg-gray-900/50 rounded-t-lg">
-                    <span class="font-bold text-gray-300">Event Log</span>
-                    <button id="clear-log-btn" class="text-gray-400 hover:text-white text-xs">Clear</button>
+                 <div id="event-log" class="bg-gray-800/80 backdrop-blur-md border-2 border-gray-700 rounded-lg shadow-2xl flex flex-col">
+                    <div id="event-log-header" class="p-2 flex justify-between items-center bg-gray-900/50 rounded-t-lg">
+                        <span class="font-bold text-gray-300">Event Log</span>
+                        <button id="clear-log-btn" class="text-gray-400 hover:text-white text-xs">Clear</button>
+                    </div>
+                    <div id="log-content" class="flex-grow p-2 text-xs font-mono text-gray-400 overflow-y-auto"></div>
                 </div>
-                <div id="log-content" class="flex-grow p-2 text-xs font-mono text-gray-400 overflow-y-auto"></div>
             </div>
         </main>
+        
+        <!-- Action Panel -->
+        <aside class="w-20 md:w-28 bg-gray-800 p-2 flex flex-col items-center border-l border-gray-700">
+             <div class="w-full flex flex-col items-center space-y-4">
+                <button id="connect-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold w-full py-2 px-3 rounded-lg flex flex-col items-center justify-center transition-all duration-200 transform hover:scale-105" title="Connect">
+                    <i class="fas fa-link text-2xl mb-1"></i>
+                    <span class="text-xs font-semibold">Connect</span>
+                </button>
+                 <button id="ping-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold w-full py-2 px-3 rounded-lg flex flex-col items-center justify-center transition-all duration-200 transform hover:scale-105" title="Ping">
+                    <i class="fas fa-network-wired text-2xl mb-1"></i>
+                    <span class="text-xs font-semibold">Ping</span>
+                </button>
+                <button id="delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold w-full py-2 px-3 rounded-lg flex flex-col items-center justify-center transition-all duration-200 transform hover:scale-105" title="Delete">
+                    <i class="fas fa-trash text-2xl mb-1"></i>
+                    <span class="text-xs font-semibold">Delete</span>
+                </button>
+            </div>
+        </aside>
     </div>
 
 
@@ -306,7 +308,8 @@
                             mac: `00:00:00:00:${id.toString().padStart(2, '0')}:${i.toString().padStart(2, '0')}`,
                             connectedTo: null, 
                             ip: interfaces?.[ifName]?.ip || '', 
-                            cidr: interfaces?.[ifName]?.cidr || ''
+                            cidr: interfaces?.[ifName]?.cidr || '',
+                            subinterfaces: interfaces?.[ifName]?.subinterfaces || {}
                         };
                     }
                     deviceData.routingTable = [];
@@ -317,10 +320,11 @@
                             mac: `00:00:00:00:${id.toString().padStart(2, '0')}:${i.toString().padStart(2, '0')}`,
                             connectedTo: null, 
                             mode: interfaces?.[ifName]?.mode || 'access', 
-                            vlan: interfaces?.[ifName]?.vlan || 1
+                            vlan: interfaces?.[ifName]?.vlan || 1,
+                            nativeVlan: interfaces?.[ifName]?.nativeVlan || 1
                         };
                     }
-                    deviceData.macAddressTable = [];
+                    deviceData.macAddressTable = {};
                     deviceData.vlans = [{id: 1, name: 'default'}];
                 } else if (type === 'pc') {
                     const ifaceConfig = interfaces?.['eth0'] || {};
@@ -757,12 +761,14 @@
                         <thead class="text-xs text-gray-300 uppercase bg-gray-700"><tr>
                             <th class="px-2 py-2">MAC</th><th class="px-2 py-2">Port</th><th class="px-2 py-2">VLAN</th>
                         </tr></thead><tbody>`;
-                    sw.macAddressTable.forEach(entry => {
-                        html += `<tr class="bg-gray-800 border-b border-gray-700">
-                            <td class="px-2 py-2 font-mono">${entry.mac}</td>
-                            <td class="px-2 py-2">${entry.interface}</td>
-                            <td class="px-2 py-2">${entry.vlan}</td>
-                        </tr>`;
+                    Object.values(sw.macAddressTable).forEach(vlanTable => {
+                        vlanTable.forEach(entry => {
+                            html += `<tr class="bg-gray-800 border-b border-gray-700">
+                                <td class="px-2 py-2 font-mono">${entry.mac}</td>
+                                <td class="px-2 py-2">${entry.interface}</td>
+                                <td class="px-2 py-2">${entry.vlan}</td>
+                            </tr>`;
+                        });
                     });
                     html += `</tbody></table>`;
                     tabContent.innerHTML = html;
@@ -911,14 +917,16 @@
             function learnMacAddress(switchDevice, mac, interfaceName) {
                 if (!mac || !interfaceName) return;
                 const vlan = switchDevice.interfaces[interfaceName]?.vlan || 1;
-                const existingEntry = switchDevice.macAddressTable.find(entry => entry.mac === mac);
+                if (!switchDevice.macAddressTable[vlan]) {
+                    switchDevice.macAddressTable[vlan] = [];
+                }
+                const existingEntry = switchDevice.macAddressTable[vlan].find(entry => entry.mac === mac);
                 if (existingEntry) {
                     existingEntry.interface = interfaceName;
-                    existingEntry.vlan = vlan;
                     existingEntry.timestamp = Date.now();
                 } else {
-                    switchDevice.macAddressTable.push({ mac, interface: interfaceName, vlan, timestamp: Date.now() });
-                    logEvent(`${switchDevice.name} learned MAC ${mac} on port ${interfaceName}`, 'text-blue-400');
+                    switchDevice.macAddressTable[vlan].push({ mac, interface: interfaceName, vlan, timestamp: Date.now() });
+                    logEvent(`${switchDevice.name}: [L2] Learned MAC ${mac} on port ${interfaceName} in VLAN ${vlan}`, 'text-blue-400');
                 }
             }
 
@@ -931,8 +939,11 @@
                     destIp: destIp,
                     sourceMac: sourceInterface ? sourceInterface.mac : Object.values(source.interfaces)[0].mac,
                     destMac: destInterface ? destInterface.mac : 'FF:FF:FF:FF:FF:FF',
-                    ttl: 64
+                    ttl: 64,
+                    vlanTag: null
                 };
+
+                if (!isReturn) logEvent(`${source.name}: [App] Creating ICMP Echo Request for ${destIp}`);
 
                 let path = [source];
                 let currentDevice = source;
@@ -943,18 +954,26 @@
                         return { path, status: 'Success' };
                     }
                     
-                    if (currentDevice.type === 'switch' && ingressPort) {
-                        learnMacAddress(currentDevice, packet.sourceMac, ingressPort);
-                    }
-
                     const { nextHopDevice, egressPort } = findNextHop(currentDevice, packet, ingressPort);
                     
                     if (!nextHopDevice) {
                         return { path, status: `Destination Host Unreachable from ${currentDevice.name}` };
                     }
                     
-                    if (nextHopDevice.type === 'router') {
+                    // Packet processing at current device before forwarding
+                    if (currentDevice.type === 'switch' && ingressPort) {
+                        const ingressIface = currentDevice.interfaces[ingressPort];
+                        if (ingressIface.mode === 'access') {
+                            packet.vlanTag = ingressIface.vlan;
+                            logEvent(`${currentDevice.name}: [L2] Frame received on access port ${ingressPort}, tagging with VLAN ${packet.vlanTag}`);
+                        }
+                        learnMacAddress(currentDevice, packet.sourceMac, ingressPort);
+                    }
+                    
+                    // Packet modification for next hop
+                     if (nextHopDevice.type === 'router') {
                         packet.ttl--;
+                        logEvent(`${nextHopDevice.name}: [L3] TTL decremented to ${packet.ttl}`);
                     }
                     
                     if (packet.ttl <= 0) {
@@ -985,6 +1004,7 @@
                 }
 
                 if (currentDevice.type === 'router') {
+                    logEvent(`${currentDevice.name}: [L3] Received packet for ${packet.destIp}. Performing route lookup.`);
                     let bestMatch = null;
                     for (const route of currentDevice.routingTable) {
                         if (getNetworkAddress(packet.destIp, route.cidr) === route.network) {
@@ -995,6 +1015,7 @@
                     }
 
                     if (bestMatch) {
+                        logEvent(`${currentDevice.name}: [L3] Longest match found: ${bestMatch.network}/${bestMatch.cidr}. Forwarding out ${bestMatch.interface}.`);
                         const outgoingInterface = currentDevice.interfaces[bestMatch.interface];
                         if (outgoingInterface && outgoingInterface.connectedTo) {
                             return {
@@ -1006,8 +1027,12 @@
                 }
 
                 if (currentDevice.type === 'switch') {
-                    const macEntry = currentDevice.macAddressTable.find(entry => entry.mac === packet.destMac);
+                    const vlan = packet.vlanTag || currentDevice.interfaces[ingressPort]?.nativeVlan || 1;
+                    const macTableForVlan = currentDevice.macAddressTable[vlan] || [];
+                    const macEntry = macTableForVlan.find(entry => entry.mac === packet.destMac);
+
                     if (macEntry) {
+                        logEvent(`${currentDevice.name}: [L2] Dest MAC ${packet.destMac} found in MAC table for VLAN ${vlan}. Forwarding to port ${macEntry.interface}.`);
                         const nextHopInterface = currentDevice.interfaces[macEntry.interface];
                         if (nextHopInterface && nextHopInterface.connectedTo) {
                             return { 
@@ -1016,7 +1041,8 @@
                             };
                         }
                     } else {
-                        // Flood (simplified for pathfinding)
+                        logEvent(`${currentDevice.name}: [L2] Dest MAC ${packet.destMac} not found in MAC table for VLAN ${vlan}. Flooding frame.`);
+                        // Simplified flood for pathfinding
                         const destDevice = devices.find(d => Object.values(d.interfaces).some(i => i.mac === packet.destMac));
                         if (!destDevice) return { nextHopDevice: null };
                         const { path } = tracePath(currentDevice, destDevice, [currentDevice.id]);
@@ -1211,20 +1237,21 @@
             let isDraggingLog = false;
             let logOffsetX, logOffsetY;
 
-            logHeader.addEventListener('mousedown', (e) => {
+            const startLogDrag = (e) => {
                 isDraggingLog = true;
-                logOffsetX = e.clientX - eventLog.offsetLeft;
-                logOffsetY = e.clientY - eventLog.offsetTop;
+                const event = e.touches ? e.touches[0] : e;
+                logOffsetX = event.clientX - eventLog.offsetLeft;
+                logOffsetY = event.clientY - eventLog.offsetTop;
                 e.stopPropagation();
-            });
+            };
 
-            document.addEventListener('mousemove', (e) => {
+            const onLogDrag = (e) => {
                 if (isDraggingLog) {
+                    const event = e.touches ? e.touches[0] : e;
                     const workspaceRect = workspace.getBoundingClientRect();
-                    let newX = e.clientX - logOffsetX;
-                    let newY = e.clientY - logOffsetY;
+                    let newX = event.clientX - logOffsetX;
+                    let newY = event.clientY - logOffsetY;
                     
-                    // Constrain to workspace bounds
                     newX = Math.max(0, Math.min(newX, workspaceRect.width - eventLog.offsetWidth));
                     newY = Math.max(0, Math.min(newY, workspaceRect.height - eventLog.offsetHeight));
 
@@ -1233,11 +1260,19 @@
                     eventLog.style.bottom = 'auto';
                     eventLog.style.right = 'auto';
                 }
-            });
-
-            document.addEventListener('mouseup', () => {
+            };
+            
+            const stopLogDrag = () => {
                 isDraggingLog = false;
-            });
+            };
+
+            logHeader.addEventListener('mousedown', startLogDrag);
+            document.addEventListener('mousemove', onLogDrag);
+            document.addEventListener('mouseup', stopLogDrag);
+            
+            logHeader.addEventListener('touchstart', startLogDrag, { passive: false });
+            document.addEventListener('touchmove', onLogDrag, { passive: false });
+            document.addEventListener('touchend', stopLogDrag);
 
         });
     </script>
