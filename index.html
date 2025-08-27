@@ -949,9 +949,12 @@
                         const progress = Math.min((timestamp - startTime) / duration, 1);
                         packet.setAttribute('cx', startPos.x + (endPos.x - startPos.x) * progress);
                         packet.setAttribute('cy', startPos.y + (endPos.y - startPos.y) * progress);
-                        if (progress < 1) requestAnimationFrame(step);
-                        else {
-                            connectionsSvg.removeChild(packet);
+                        if (progress < 1) {
+                            requestAnimationFrame(step);
+                        } else {
+                            if (packet.parentNode) {
+                                packet.parentNode.removeChild(packet);
+                            }
                             resolve();
                         }
                     }
