@@ -326,21 +326,33 @@
                     isDragging = true;
                     deviceEl.classList.add('dragging');
                     const event = e.touches ? e.touches[0] : e;
+                    const startX = event.clientX;
+                    const startY = event.clientY;
+
                     const rect = deviceEl.getBoundingClientRect();
                     const offsetX = event.clientX - rect.left;
                     const offsetY = event.clientY - rect.top;
                     
                     const onDrag = (e) => {
                         if (!isDragging) return;
-                        hasMoved = true;
-                        e.preventDefault();
+                        
                         const moveEvent = e.touches ? e.touches[0] : e;
-                        const workspaceRect = workspace.getBoundingClientRect();
-                        deviceData.x = moveEvent.clientX - workspaceRect.left - offsetX;
-                        deviceData.y = moveEvent.clientY - workspaceRect.top - offsetY;
-                        deviceEl.style.left = `${deviceData.x}px`;
-                        deviceEl.style.top = `${deviceData.y}px`;
-                        updateConnections();
+                        const deltaX = Math.abs(moveEvent.clientX - startX);
+                        const deltaY = Math.abs(moveEvent.clientY - startY);
+
+                        if (deltaX > 5 || deltaY > 5) {
+                           hasMoved = true;
+                        }
+
+                        if (hasMoved) {
+                            e.preventDefault();
+                            const workspaceRect = workspace.getBoundingClientRect();
+                            deviceData.x = moveEvent.clientX - workspaceRect.left - offsetX;
+                            deviceData.y = moveEvent.clientY - workspaceRect.top - offsetY;
+                            deviceEl.style.left = `${deviceData.x}px`;
+                            deviceEl.style.top = `${deviceData.y}px`;
+                            updateConnections();
+                        }
                     };
                     
                     const stopDrag = () => {
